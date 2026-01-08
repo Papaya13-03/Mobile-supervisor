@@ -143,19 +143,17 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       newInterval = 60;
     }
 
-    if (newInterval !== this.currentInterval) {
-      this.currentInterval = newInterval;
+    this.currentInterval = newInterval;
 
-      this.publish(`device/${deviceId}/config`, {
-        type: 'config',
-        sendIntervalSec: newInterval,
-        reason: 'server_load',
-        queueLength: this.queue.length,
-        timestamp: Date.now(),
-      });
+    this.publish(`device/${deviceId}/config`, {
+      type: 'config',
+      sendIntervalSec: newInterval,
+      reason: 'server_load',
+      queueLength: this.queue.length,
+      timestamp: Date.now(),
+    });
 
-      console.log(`Config sent to ${deviceId}: interval=${newInterval}s`);
-    }
+    console.log(`Config sent to ${deviceId}: interval=${newInterval}s`);
   }
 
   // =========================
