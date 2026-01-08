@@ -3,15 +3,39 @@ import { ConfigService } from '@nestjs/config';
 import { DataService } from '../data/data.service';
 import * as mqtt from 'mqtt';
 
+interface CellInfoPayload {
+  deviceId: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+  cellTowers?: any[];
+  [key: string]: any;
+}
+
 @Injectable()
 export class MqttService implements OnModuleInit, OnModuleDestroy {
   private client: mqtt.MqttClient;
+
+  // =========================
+  // QUEUE & WORKER
+  // =========================
+  private queue: CellInfoPayload[] = [];
+  private processing = false;
+
+  // =========================
+  // CONFIG CONTROL
+  // =========================
+  private currentInterval = 15; // seconds
 
   constructor(
     private readonly configService: ConfigService,
     private readonly dataService: DataService,
   ) {}
 
+  // =========================
+  // INIT MQTT
+  // =========================
   onModuleInit() {
     const host = this.configService.get<string>('MQTT_HOST');
     const port = this.configService.get<number>('MQTT_PORT') ?? 8883;
@@ -19,30 +43,24 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     const password = this.configService.get<string>('MQTT_PASS');
 
     if (!host || !username || !password) {
-      console.error('Missing MQTT config (HOST / USER / PASS)');
+      console.error('Missing MQTT config');
       return;
     }
 
     const url = `mqtts://${host}:${port}`;
 
     this.client = mqtt.connect(url, {
-      // AUTH
       username,
       password,
-
-      // CLIENT ID (BẮT BUỘC DUY NHẤT)
       clientId: `nestjs_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-
-      // RECONNECT
       clean: true,
       reconnectPeriod: 1000,
-
-      // TLS
-      // HiveMQ Cloud dùng CA public → Node.js OK sẵn
-      // Nếu gặp lỗi TLS thì bật dòng dưới để test
       rejectUnauthorized: false,
     });
 
+    // =========================
+    // CONNECT
+    // =========================
     this.client.on('connect', () => {
       console.log('Connected to HiveMQ Cloud');
 
@@ -50,72 +68,116 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         if (err) {
           console.error('Subscribe error:', err.message);
         } else {
-          console.log('Subscribed topic: cell_info');
+          console.log('Subscribed: cell_info');
         }
       });
     });
 
-    this.client.on('message', async (topic, message) => {
+    // =========================
+    // MESSAGE HANDLER (FAST)
+    // =========================
+    this.client.on('message', (topic, message) => {
       if (topic !== 'cell_info') return;
 
       try {
-        const payload = JSON.parse(message.toString());
+        const payload: CellInfoPayload = JSON.parse(message.toString());
 
-        /**
-         * payload TỪ THIẾT BỊ PHẢI CÓ:
-         * {
-         *   deviceId: "xxx",
-         *   location: { latitude, longitude },
-         *   cellTowers: [...]
-         * }
-         */
-
-        const deviceId = payload.deviceId;
-        if (!deviceId) {
-          console.warn('MQTT payload missing deviceId');
+        if (!payload.deviceId) {
+          console.warn('Missing deviceId');
           return;
         }
-        console.log('Payload', payload);
-        await this.dataService.saveData(deviceId, payload);
+
+        // PUSH QUEUE (O(1))
+        this.queue.push(payload);
+
+        // ADJUST MOBILE SPEED
+        this.adjustMobileInterval(payload.deviceId);
+
+        // START WORKER IF IDLE
+        if (!this.processing) {
+          this.processQueue();
+        }
       } catch (err) {
-        console.error('Invalid MQTT payload:', err.message);
+        console.error('Invalid payload:', err.message);
       }
     });
 
-    this.client.on('reconnect', () => {
-      console.log('MQTT reconnecting...');
-    });
+    this.client.on('reconnect', () => console.log('🔄 MQTT reconnecting...'));
 
-    this.client.on('error', (err) => {
-      console.error('MQTT error:', err.message);
-    });
+    this.client.on('error', (err) => console.error('MQTT error:', err.message));
 
-    this.client.on('close', () => {
-      console.warn('MQTT connection closed');
-    });
+    this.client.on('close', () => console.warn('⚠️ MQTT connection closed'));
   }
 
-  publish(topic: string, message: string | object) {
-    if (!this.client?.connected) {
-      console.warn('MQTT not connected');
-      return;
+  // =========================
+  // QUEUE WORKER
+  // =========================
+  private async processQueue() {
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      const payload = this.queue.shift();
+      if (!payload) continue;
+      const deviceId = payload.deviceId;
+
+      try {
+        await this.dataService.saveData(deviceId, payload);
+      } catch (err) {
+        console.error('Save failed:', err.message);
+      }
     }
+
+    this.processing = false;
+  }
+
+  // =========================
+  // ADAPTIVE CONFIG CONTROL
+  // =========================
+  private adjustMobileInterval(deviceId: string) {
+    let newInterval = this.currentInterval;
+
+    if (this.queue.length > 500) {
+      newInterval = 120;
+    } else if (this.queue.length > 200) {
+      newInterval = 60;
+    }
+
+    if (newInterval !== this.currentInterval) {
+      this.currentInterval = newInterval;
+
+      this.publish(`device/${deviceId}/config`, {
+        type: 'config',
+        sendIntervalSec: newInterval,
+        reason: 'server_load',
+        queueLength: this.queue.length,
+        timestamp: Date.now(),
+      });
+
+      console.log(`Config sent to ${deviceId}: interval=${newInterval}s`);
+    }
+  }
+
+  // =========================
+  // PUBLISH
+  // =========================
+  publish(topic: string, message: string | object) {
+    if (!this.client?.connected) return;
 
     const payload =
       typeof message === 'string' ? message : JSON.stringify(message);
 
-    this.client.publish(topic, payload, { qos: 0 }, (err) => {
-      if (err) {
-        console.error('Publish error:', err.message);
-      }
+    this.client.publish(topic, payload, {
+      qos: 1,
+      retain: true,
     });
   }
 
+  // =========================
+  // SHUTDOWN
+  // =========================
   onModuleDestroy() {
     if (this.client) {
-      this.client.end(true, () => {
-        console.log('MQTT disconnected');
-      });
+      this.client.end(true, () => console.log('🔌 MQTT disconnected'));
     }
   }
 }
