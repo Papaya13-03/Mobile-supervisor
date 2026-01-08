@@ -118,6 +118,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     while (this.queue.length > 0) {
       const payload = this.queue.shift();
       if (!payload) continue;
+      console.log('Processing data from device:', payload.deviceId);
       const deviceId = payload.deviceId;
 
       try {
