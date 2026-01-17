@@ -12,9 +12,9 @@ export class DeviceService {
 
   async findAll(page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
-    console.time('TOTAL findAll');
+    // console.time('TOTAL findAll');
 
-    console.time('Query devices + count');
+    // console.time('Query devices + count');
     const [total, devices] = await Promise.all([
       this.prisma.devices.count(),
       this.prisma.devices.findMany({
@@ -35,21 +35,21 @@ export class DeviceService {
         },
       }),
     ]);
-    console.timeEnd('Query devices + count');
+    // console.timeEnd('Query devices + count');
 
     const deviceIds = devices.map((d) => d.id);
 
     // Lấy recorded_at mới nhất cho mỗi device
-    console.time('GroupBy latestTimes');
+    // console.time('GroupBy latestTimes');
     const latestTimes = await this.prisma.cell_tower_history.groupBy({
       by: ['device_id'],
       where: { device_id: { in: deviceIds } },
       _max: { recorded_at: true },
     });
-    console.timeEnd('GroupBy latestTimes');
+    // console.timeEnd('GroupBy latestTimes');
 
     // Lấy tất cả cell tower tại các thời điểm mới nhất
-    console.time('Query allLatestCells');
+    // console.time('Query allLatestCells');
     const allLatestCells = await this.prisma.cell_tower_history.findMany({
       where: {
         OR: latestTimes.map((t) => ({
@@ -58,10 +58,10 @@ export class DeviceService {
         })),
       },
     });
-    console.timeEnd('Query allLatestCells');
+    // console.timeEnd('Query allLatestCells');
 
     // Group theo device_id
-    console.time('Group in memory');
+    // console.time('Group in memory');
     const cellMap = new Map<string, any[]>();
 
     for (const cell of allLatestCells) {
@@ -70,10 +70,10 @@ export class DeviceService {
       }
       cellMap.get(cell.device_id)!.push(cell);
     }
-    console.timeEnd('Group in memory');
+    // console.timeEnd('Group in memory');
 
     // Transform
-    console.time('Transform results');
+    // console.time('Transform results');
     const transformed = devices.map((device) => {
       const lastLoc = device.location_history?.[0];
 
@@ -106,9 +106,9 @@ export class DeviceService {
           : null,
       };
     });
-    console.timeEnd('Transform results');
+    // console.timeEnd('Transform results');
 
-    console.timeEnd('TOTAL findAll');
+    // console.timeEnd('TOTAL findAll');
 
     return {
       data: transformed,

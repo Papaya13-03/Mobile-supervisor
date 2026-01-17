@@ -91,9 +91,7 @@ export class DashboardService {
         device: location.device.model || 'Unknown Device',
         user: location.device.user?.full_name || 'Unknown User',
         action: 'Di chuyển',
-        location:
-          location.district ||
-          `${location.latitude.toNumber()}, ${location.longitude.toNumber()}`,
+        location: `${location.latitude.toNumber()}, ${location.longitude.toNumber()}`,
         time: timeText,
         type: 'move',
         timestamp: location.recorded_at,

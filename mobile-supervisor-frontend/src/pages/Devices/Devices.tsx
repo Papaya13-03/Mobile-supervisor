@@ -166,8 +166,8 @@ const Devices: React.FC = () => {
       const response = await deviceService.configureInterval(
         Number(configTime)
       );
-
-      if (response.ok) {
+      console.log("Response từ API config interval:", response);
+      if (response.success) {
         console.log("Cập nhật thời gian thành công:", configTime, "giây");
       } else {
         console.error("Lỗi khi cập nhật thời gian");
