@@ -9,43 +9,69 @@ import SearchFilterBar from "../../layout/topbar/searchFilterBar";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-const headerStyle: React.CSSProperties = {
+const container: React.CSSProperties = {
+  backgroundAttachment: "fixed",
+};
+const header: React.CSSProperties = {
+  background: "rgba(255, 255, 255, 0.95)",
+  backdropFilter: "blur(10px)",
+  WebkitBackdropFilter: "blur(10px)",
+  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+  margin: "0rem 1rem",
+  borderRadius: "1rem",
+};
+
+const headerContent: React.CSSProperties = {
+  padding: "1.5rem 1rem",
+};
+
+const headerTop: React.CSSProperties = {
   display: "flex",
-  justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: 20,
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: "1rem",
 };
 
-const tabsWrap: React.CSSProperties = {
-  display: "inline-flex",
-  gap: 6,
-  borderRadius: 8,
-  padding: 4,
-  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+const headerTitle: React.CSSProperties = {
+  fontSize: "2rem",
+  fontWeight: 800,
+  background: "#ef6e52",
+  WebkitBackgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+  backgroundClip: "text",
+  margin: 0,
 };
-
-const tabBtn = (active: boolean): React.CSSProperties => ({
-  padding: "6px 12px",
-  borderRadius: 6,
-  border: "none",
-  background: active ? "#fff" : "transparent",
-  cursor: "pointer",
-  fontWeight: active ? 700 : 500,
-  color: active ? "#4f46e5" : "#fff",
-  transition: "all 0.2s",
-});
 
 const refreshBtn: React.CSSProperties = {
-  padding: "8px 16px",
-  backgroundColor: "#fff",
-  border: "1px solid #d1d5db",
-  borderRadius: 6,
+  padding: "0.625rem 1.25rem",
+  background: "#eb420f",
+  color: "#fff",
+  border: "none",
+  borderRadius: "0.75rem",
   cursor: "pointer",
-  fontWeight: 500,
-  color: "#374151",
+  fontWeight: 600,
+  fontSize: "0.875rem",
   display: "flex",
   alignItems: "center",
-  gap: "5px",
+  gap: "0.5rem",
+  transition: "all 0.3s ease",
+  boxShadow: "0 4px 6px -1px rgba(235, 66, 15, 0.4)",
+  opacity: 1,
+};
+
+const selectBox: React.CSSProperties = {
+  padding: "0.625rem 1rem",
+  fontSize: "0.875rem",
+  fontWeight: 500,
+  color: "#374151",
+  backgroundColor: "white",
+  border: "1.5px solid #fed7aa",
+  borderRadius: "0.75rem",
+  cursor: "pointer",
+  outline: "none",
+  transition: "all 0.2s ease",
+  minWidth: "200px",
 };
 
 const Devices: React.FC = () => {
@@ -61,6 +87,10 @@ const Devices: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("");
+
+  // State cho config thời gian
+  const [configTime, setConfigTime] = useState<string>("60");
+  const [isUpdatingConfig, setIsUpdatingConfig] = useState<boolean>(false);
 
   const mapToDeviceRow = (item: any): DeviceRow => {
     const lastLoc = item.location_history?.[0] || item.last_location;
@@ -126,6 +156,36 @@ const Devices: React.FC = () => {
     },
     [loading]
   );
+
+  // Function xử lý cập nhật config thời gian
+  const handleUpdateConfigTime = async () => {
+    try {
+      setIsUpdatingConfig(true);
+
+      // Gọi API để cập nhật config
+      const response = await deviceService.configureInterval(
+        Number(configTime)
+      );
+
+      if (response.ok) {
+        console.log("Cập nhật thời gian thành công:", configTime, "giây");
+      } else {
+        console.error("Lỗi khi cập nhật thời gian");
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật config thời gian:", error);
+    } finally {
+      setIsUpdatingConfig(false);
+    }
+  };
+
+  // Function xử lý khi bấm làm mới
+  const handleRefresh = async () => {
+    setPage(1);
+    setHasMore(true);
+    await handleUpdateConfigTime(); // Cập nhật config
+    fetchDevices(1, false); // Làm mới data
+  };
 
   useEffect(() => {
     setPage(1);
@@ -204,23 +264,54 @@ const Devices: React.FC = () => {
   });
 
   return (
-    <div>
-      <div style={headerStyle}>
-        <div style={tabsWrap}>
-          <button style={tabBtn(true)}>Danh sách thiết bị</button>
-        </div>
+    <div style={container}>
+      <div style={header}>
+        <div style={headerContent}>
+          <div style={headerTop}>
+            <div>
+              <h1 style={headerTitle}>Danh sách thiết bị</h1>
+            </div>
 
-        <button
-          style={refreshBtn}
-          onClick={() => {
-            setPage(1);
-            setHasMore(true);
-            fetchDevices(1, false);
-          }}
-          disabled={loading}
-        >
-          {loading ? "Đang tải..." : "Làm mới"}
-        </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              {/* Box chọn thời gian */}
+              <select
+                style={selectBox}
+                value={configTime}
+                onChange={(e) => setConfigTime(e.target.value)}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = "#fb923c";
+                  e.currentTarget.style.boxShadow =
+                    "0 2px 4px rgba(249, 115, 22, 0.15)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = "#fed7aa";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <option value="5">5 giây</option>
+                <option value="10">10 giây</option>
+                <option value="30">30 giây</option>
+                <option value="60">1 phút</option>
+                <option value="300">5 phút</option>
+                <option value="600">10 phút</option>
+              </select>
+
+              {/* Nút làm mới */}
+              <button
+                style={{
+                  ...refreshBtn,
+                  opacity: loading || isUpdatingConfig ? 0.6 : 1,
+                  cursor:
+                    loading || isUpdatingConfig ? "not-allowed" : "pointer",
+                }}
+                onClick={handleRefresh}
+                disabled={loading || isUpdatingConfig}
+              >
+                {loading || isUpdatingConfig ? "Đang xử lý..." : "Làm mới"}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <SearchFilterBar

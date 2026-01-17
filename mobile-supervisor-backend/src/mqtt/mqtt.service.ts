@@ -90,9 +90,6 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         // PUSH QUEUE (O(1))
         this.queue.push(payload);
 
-        // ADJUST MOBILE SPEED
-        this.adjustMobileInterval(payload.deviceId);
-
         // START WORKER IF IDLE
         if (!this.processing) {
           this.processQueue();
@@ -132,28 +129,19 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   }
 
   // =========================
-  // ADAPTIVE CONFIG CONTROL
+  // CONFIG FROM FE ONLY
   // =========================
-  private adjustMobileInterval(deviceId: string) {
-    let newInterval = this.currentInterval;
+  public publishIntervalFromFE(interval: number) {
+    this.currentInterval = interval;
 
-    if (this.queue.length > 500) {
-      newInterval = 120;
-    } else if (this.queue.length > 200) {
-      newInterval = 60;
-    }
-
-    this.currentInterval = newInterval;
-
-    this.publish(`device/${deviceId}/config`, {
+    this.publish('device/config', {
       type: 'config',
-      sendIntervalSec: newInterval,
-      reason: 'server_load',
-      queueLength: this.queue.length,
+      sendIntervalSec: interval,
+      source: 'frontend',
       timestamp: Date.now(),
     });
 
-    console.log(`Config sent to ${deviceId}: interval=${newInterval}s`);
+    console.log(`Interval published from FE: ${interval}s`);
   }
 
   // =========================

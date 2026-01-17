@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import dashboardService from "../../services/dashboard";
 import styles from "./Overview.module.css";
+import Loading from "../../components/loading/loading";
 
 interface DashboardData {
   summary: {
@@ -129,14 +130,7 @@ const Dashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.loadingContent}>
-          <div className={styles.spinner}></div>
-          <p className={styles.loadingText}>Đang tải dữ liệu...</p>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (error) {
@@ -378,21 +372,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Alerts */}
-        {data.summary.alerts > 0 && (
-          <div className={styles.alertBanner}>
-            <div className={styles.alertContent}>
-              <AlertTriangle
-                className={`${styles.alertIcon} w-5 h-5 text-red-600`}
-              />
-              <div className={styles.alertText}>
-                <h3>Có {data.summary.alerts} cảnh báo cần xử lý</h3>
-                <p>Nhấn để xem chi tiết các thiết bị có vấn đề</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

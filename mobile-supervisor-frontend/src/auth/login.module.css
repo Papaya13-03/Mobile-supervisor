@@ -1,12 +1,28 @@
 .loginContainer {
   min-height: 100vh;
   min-width: 100vw;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.loginLayout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.loginImage {
+  flex: 1;
+  background-image: url("/anh.jpg");
+  background-size: contain; /* 👈 quan trọng */
+  background-position: center;
+  background-repeat: no-repeat; /* 👈 tránh lặp ảnh */
+  background-color: #ffffff; /* hoặc màu bạn muốn */
+}
+
+.loginCardWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center; /* 👈 căn giữa theo chiều dọc */
+  justify-content: center; /* 👈 căn giữa theo chiều ngang */
 }
 
 .loginCard {
@@ -16,6 +32,7 @@
   padding: 40px;
   width: 100%;
   max-width: 400px;
+  max-height: 400px;
   position: relative;
   overflow: hidden;
 }
@@ -27,7 +44,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: #eb420f;
 }
 
 .loginHeader {
@@ -80,17 +97,18 @@
 }
 
 .formInput {
-  padding: 12px 16px;
+  padding: 12px 40px 12px 16px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 16px;
   transition: all 0.2s ease;
   background: #fafafa;
+  width: 85%;
 }
 
 .formInput:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #eb420f;
   background: white;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
@@ -99,8 +117,32 @@
   color: #a0aec0;
 }
 
+.passwordWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.eyeIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  user-select: none;
+  font-size: 18px;
+  color: #718096;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.eyeIcon:hover {
+  color: #2d3748;
+}
+
 .loginButton {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #eb420f;
   color: white;
   border: none;
   padding: 14px 24px;
@@ -166,7 +208,7 @@
 }
 
 .forgotLink {
-  color: #667eea;
+  color: #e75d3e;
   text-decoration: none;
   font-weight: 600;
   margin-left: 4px;
@@ -174,7 +216,7 @@
 }
 
 .forgotLink:hover {
-  color: #5a67d8;
+  color: #e75d3e;
   text-decoration: underline;
 }
 
@@ -223,7 +265,7 @@
 
   .formInput:focus {
     background: #2d3748;
-    border-color: #667eea;
+    border-color: #e75d3e;
   }
 
   .formInput::placeholder {

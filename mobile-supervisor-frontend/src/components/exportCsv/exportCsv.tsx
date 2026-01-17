@@ -137,7 +137,8 @@ const DateRangeExportCSV: React.FC<DateRangeExportCSVProps> = ({
         padding: "15px",
         border: "1px solid #e5e7eb",
         borderRadius: "8px",
-        background: "#f9fafb",
+        background: "white",
+        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
       }}
     >
       <h3 style={{ margin: "0 0 15px", color: "#374151" }}>
@@ -212,7 +213,7 @@ const DateRangeExportCSV: React.FC<DateRangeExportCSVProps> = ({
           disabled={isExporting}
           style={{
             padding: "8px 20px",
-            background: isExporting ? "#9ca3af" : "#10b981",
+            background: isExporting ? "#9ca3af" : "#eb420f",
             color: "#fff",
             border: "none",
             borderRadius: "4px",

@@ -31,28 +31,16 @@ export class DashboardService {
     // 5. Tổng số BTS stations
     const activeBTS = await this.prisma.bts_stations.count();
 
-    // 6. Cảnh báo (thiết bị có tín hiệu yếu)
-    const alerts = await this.prisma.cell_tower_history.count({
-      where: {
-        rssi: {
-          lt: -100, // Tín hiệu yếu hơn -100 dBm
-        },
-        recorded_at: {
-          gte: fiveMinutesAgo,
-        },
-      },
-    });
-
-    // 7. Trạng thái thiết bị
+    // 6. Trạng thái thiết bị
     const devicesByStatus = [
       { status: 'Hoạt động', count: activeDevices, color: '#10b981' },
       { status: 'Offline', count: offlineDevices, color: '#ef4444' },
     ];
 
-    // 8. Chất lượng tín hiệu (5 phút gần nhất)
+    // 7. Chất lượng tín hiệu (5 phút gần nhất)
     const signalStats = await this.getSignalQualityStats(fiveMinutesAgo);
 
-    // 9. Top locations
+    // 8. Top locations theo quận Hà Nội
     const topLocations = await this.getTopLocations();
 
     return {
@@ -62,7 +50,6 @@ export class DashboardService {
         offlineDevices,
         totalUsers,
         activeBTS,
-        alerts,
       },
       devicesByStatus,
       signalQuality: signalStats,
@@ -104,53 +91,16 @@ export class DashboardService {
         device: location.device.model || 'Unknown Device',
         user: location.device.user?.full_name || 'Unknown User',
         action: 'Di chuyển',
-        location: `${location.latitude.toNumber()}, ${location.longitude.toNumber()}`,
+        location:
+          location.district ||
+          `${location.latitude.toNumber()}, ${location.longitude.toNumber()}`,
         time: timeText,
         type: 'move',
         timestamp: location.recorded_at,
       };
     });
 
-    // Lấy cảnh báo tín hiệu yếu
-    const weakSignals = await this.prisma.cell_tower_history.findMany({
-      where: {
-        rssi: { lt: -100 },
-        recorded_at: {
-          gte: new Date(Date.now() - 30 * 60 * 1000), // 30 phút
-        },
-      },
-      take: 5,
-      orderBy: { recorded_at: 'desc' },
-      include: {
-        device: {
-          include: { user: true },
-        },
-      },
-    });
-
-    const alerts = weakSignals.map((signal) => {
-      const timeDiff = Date.now() - signal.recorded_at.getTime();
-      const minutesAgo = Math.floor(timeDiff / 60000);
-      const timeText = minutesAgo < 1 ? 'Vừa xong' : `${minutesAgo} phút trước`;
-
-      return {
-        id: `alert-${signal.id}`,
-        device: signal.device.model || 'Unknown Device',
-        user: signal.device.user?.full_name || 'Unknown User',
-        action: 'Tín hiệu yếu',
-        location: `CID: ${signal.cid}`,
-        time: timeText,
-        type: 'alert',
-        timestamp: signal.recorded_at,
-      };
-    });
-
-    // Merge và sort
-    const combined = [...activities, ...alerts].sort(
-      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
-    );
-
-    return combined.slice(0, limit);
+    return activities;
   }
 
   /**
@@ -211,48 +161,71 @@ export class DashboardService {
   }
 
   /**
-   * Top locations
+   * Top locations theo quận Hà Nội (Tối ưu với Raw Query)
    */
   private async getTopLocations() {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
-    const raw = await this.prisma.location_history.findMany({
-      where: {
-        recorded_at: { gte: fiveMinutesAgo },
-        district: { not: null },
-      },
-      select: {
-        district: true,
-        device_id: true,
-      },
-    });
+    // Danh sách 30 quận/huyện Hà Nội
+    const hanoiDistricts = [
+      'Ba Đình',
+      'Hoàn Kiếm',
+      'Tây Hồ',
+      'Long Biên',
+      'Cầu Giấy',
+      'Đống Đa',
+      'Hai Bà Trưng',
+      'Hoàng Mai',
+      'Thanh Xuân',
+      'Nam Từ Liêm',
+      'Bắc Từ Liêm',
+      'Hà Đông',
+      'Sơn Tây',
+      'Ba Vì',
+      'Phúc Thọ',
+      'Đan Phượng',
+      'Hoài Đức',
+      'Quốc Oai',
+      'Thạch Thất',
+      'Chương Mỹ',
+      'Thanh Oai',
+      'Thường Tín',
+      'Phú Xuyên',
+      'Ứng Hòa',
+      'Mỹ Đức',
+      'Sóc Sơn',
+      'Đông Anh',
+      'Gia Lâm',
+      'Mê Linh',
+      'Thanh Trì',
+    ];
 
-    // Khử trùng lặp device theo district
-    const map = new Map<string, Set<string>>();
+    // Raw query để tối ưu performance
+    const result: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        district,
+        COUNT(DISTINCT device_id) as device_count
+      FROM location_history
+      WHERE 
+        recorded_at >= ${fiveMinutesAgo}
+        AND district IS NOT NULL
+        AND district IN (${hanoiDistricts.join("', '")})
+      GROUP BY district
+      ORDER BY device_count DESC
+      LIMIT 5
+    `;
 
-    for (const row of raw) {
-      if (!row.district) continue; // chặn null
-
-      if (!map.has(row.district)) {
-        map.set(row.district, new Set());
-      }
-
-      map.get(row.district)!.add(row.device_id);
+    // Nếu không có dữ liệu, trả về mảng rỗng
+    if (!result || result.length === 0) {
+      return [];
     }
 
-    const result = Array.from(map.entries())
-      .map(([district, devicesSet]) => ({
-        district,
-        devices: devicesSet.size,
-      }))
-      .sort((a, b) => b.devices - a.devices)
-      .slice(0, 5);
-
-    const max = result[0]?.devices || 1;
+    const max = Number(result[0]?.device_count) || 1;
 
     return result.map((item) => ({
-      ...item,
-      percentage: Math.round((item.devices / max) * 100),
+      district: item.district,
+      devices: Number(item.device_count),
+      percentage: Math.round((Number(item.device_count) / max) * 100),
     }));
   }
 
@@ -277,30 +250,31 @@ export class DashboardService {
         since = new Date(now.setHours(0, 0, 0, 0));
     }
 
-    // Hoạt động theo giờ
-    const hourlyActivity = await this.prisma.location_history.groupBy({
-      by: ['recorded_at'],
-      where: {
-        recorded_at: { gte: since },
-      },
-      _count: true,
+    // Hoạt động theo giờ (tối ưu với raw query)
+    const hourlyData: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        EXTRACT(HOUR FROM recorded_at) as hour,
+        COUNT(*) as count
+      FROM location_history
+      WHERE recorded_at >= ${since}
+      GROUP BY EXTRACT(HOUR FROM recorded_at)
+      ORDER BY hour
+    `;
+
+    // Map dữ liệu vào 24 giờ
+    const hourCounts: Record<number, number> = {};
+    hourlyData.forEach((item) => {
+      hourCounts[Number(item.hour)] = Number(item.count);
     });
 
-    // Group by hour
-    const hourCounts: Record<string, number> = {};
-    hourlyActivity.forEach((item) => {
-      const hour = new Date(item.recorded_at).getHours();
-      hourCounts[hour] = (hourCounts[hour] || 0) + item._count;
-    });
-
-    const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+    const formattedHourlyData = Array.from({ length: 24 }, (_, i) => ({
       hour: `${i}:00`,
       count: hourCounts[i] || 0,
     }));
 
     return {
       period,
-      hourlyActivity: hourlyData,
+      hourlyActivity: formattedHourlyData,
     };
   }
 }

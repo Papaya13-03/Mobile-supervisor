@@ -28,6 +28,13 @@ const deviceService = {
     });
     return response.data;
   },
+
+  configureInterval: async (interval: number) => {
+    const response = await privateClient.post("/mqtt/publish-interval", {
+      interval,
+    });
+    return response.data;
+  },
 };
 
 export default deviceService;

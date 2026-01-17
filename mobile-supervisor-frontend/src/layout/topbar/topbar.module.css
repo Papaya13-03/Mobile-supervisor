@@ -4,9 +4,8 @@
   gap: 12px;
   align-items: center;
   border-bottom: 1px solid #eee;
-  padding: 12px 0px;
-  background: #ffffff;
   box-sizing: border-box;
+  margin: 1rem 1rem;
 }
 
 .search {
@@ -47,7 +46,7 @@
   border-radius: 6px;
   cursor: pointer;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #eb420f;
   color: #fff;
 }
 

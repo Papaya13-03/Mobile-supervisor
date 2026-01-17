@@ -1,20 +1,33 @@
+.tableContainer {
+  margin: 1rem 1rem;
+}
+
 .table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
+  box-sizing: border-box;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.1),
+    0 2px 4px -1px rgba(249, 115, 22, 0.06);
 }
 
 .th {
   text-align: left;
   padding: 10px 12px;
-  background: #f6f7f9;
-  color: #333;
-  border-bottom: 1px solid #e5e7eb;
+  background: #f97316;
+  color: white;
+  font-weight: 600;
+  border-bottom: 3px solid #ea580c;
   position: sticky;
   top: 0;
   z-index: 1;
   white-space: nowrap;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .thButton {
@@ -28,17 +41,32 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.thButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .td {
   padding: 10px 12px;
-  border-bottom: 1px solid #eef1f4;
-  color: #222;
+  border-bottom: 1px solid #ffedd5;
+  color: #1f2937;
   vertical-align: middle;
+  background: white;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
 .rowClickable {
   cursor: pointer;
+}
+
+.rowClickable:hover .td {
+  background: #fff7ed;
+  transform: scale(1.001);
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.08);
 }
 
 .pill {
@@ -46,32 +74,40 @@
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.6;
   text-transform: capitalize;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.3px;
 }
 
 .statusOnline {
-  background: #e8f8ef;
-  color: #0f7a48;
+  background: #10b981;
+  color: white;
+  border: 1px solid #059669;
 }
 
 .statusOffline {
-  background: #ffebea;
-  color: #9f1f1a;
+  background: #ef4444;
+  color: white;
+  border: 1px solid #dc2626;
 }
 
 .statusIdle {
-  background: #fff7e6;
-  color: #996a00;
+  background: #f59e0b;
+  color: white;
+  border: 1px solid #d97706;
 }
 
 .sortIcon {
-  opacity: 0.35;
+  opacity: 0.7;
+  transition: all 0.2s ease;
 }
 
 .sortIconActive {
   opacity: 1;
+  color: #fef3c7;
+  filter: drop-shadow(0 0 2px rgba(254, 243, 199, 0.5));
 }
 
 /* Căn giữa các nút */
@@ -79,7 +115,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px; /* Khoảng cách giữa 2 nút */
+  gap: 8px;
 }
 
 /* Nút bấm hình vuông bo góc */
@@ -89,39 +125,42 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #e5e7eb;
-  background-color: white;
-  color: #6b7280;
+  border: 1.5px solid #fed7aa;
+  background: white;
+  color: #f97316;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   padding: 0;
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.1);
 }
 
 /* Hiệu ứng hover chung */
 .actionBtn:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-  color: #111827;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: #fb923c;
+  color: #ea580c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(249, 115, 22, 0.2);
 }
 
 /* Active effect */
 .actionBtn:active {
   transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.15);
 }
 
 /* Màu riêng cho nút Xem thiết bị (Mobile icon) khi hover */
 .actionBtn:first-child:hover {
-  color: #2563eb; /* Màu xanh dương */
-  background-color: #eff6ff;
-  border-color: #bfdbfe;
+  color: white;
+  background: #f97316;
+  border-color: #ea580c;
+  box-shadow: 0 6px 12px rgba(249, 115, 22, 0.4);
 }
 
 /* Màu riêng cho nút Xem User (User icon) khi hover */
 .actionBtn:last-child:hover {
-  color: #059669; /* Màu xanh lá */
-  background-color: #ecfdf5;
-  border-color: #a7f3d0;
+  color: white;
+  background: #fb923c;
+  border-color: #f97316;
+  box-shadow: 0 6px 12px rgba(251, 146, 60, 0.4);
 }

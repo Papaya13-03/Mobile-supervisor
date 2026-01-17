@@ -105,7 +105,11 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
       : styles.statusIdle;
 
   return (
-    <div role="region" aria-label="Bảng thiết bị">
+    <div
+      role="region"
+      aria-label="Bảng thiết bị"
+      className={styles.tableContainer}
+    >
       {sorted.length === 0 ? (
         <EmptyState fullHeight description="Không có dữ liệu thiết bị." />
       ) : (
