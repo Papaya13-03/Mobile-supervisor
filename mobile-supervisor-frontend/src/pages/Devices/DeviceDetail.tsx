@@ -156,13 +156,6 @@ const noDataContainer: React.CSSProperties = {
   fontWeight: 500,
 };
 
-const loadingContainer: React.CSSProperties = {
-  padding: "40px",
-  textAlign: "center",
-  fontSize: "16px",
-  color: "#f97316",
-};
-
 const notFoundContainer: React.CSSProperties = {
   padding: "40px",
   textAlign: "center",
